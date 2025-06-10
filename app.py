@@ -170,5 +170,88 @@ def borrow_book(book_id):
     
     return jsonify({'message': 'Book borrowed successfully'}), 201
 
+@app.route('/return_book/<int:book_id>', methods=['POST'])
+def return_book(book_id):
+    if not request.cookies.get('session_id'):
+        return jsonify({'error': 'User not logged in'}), 401
+
+    cur = mysql.connection.cursor()
+    cur.execute(
+        "SELECT id FROM users WHERE id = %s",
+        (request.cookies.get('session_id'),)
+    )
+    user = cur.fetchone()
+
+    if not user:
+        cur.close()
+        return jsonify({'error': 'Invalid session'}), 401
+
+    cur.execute(
+        "DELETE FROM borrowed_book WHERE book_id = %s AND user_id = %s",
+        (book_id, user[0])
+    )
+
+    mysql.connection.commit()
+    cur.close()
+
+    return jsonify({'message': 'Book returned successfully'}), 200
+
+
+@app.route('/borrowed_books', methods=['GET'])
+def get_all_borrowed_books():
+    if not request.cookies.get('session_id'):
+        return jsonify({'error': 'User not logged in'}), 401
+
+    cur = mysql.connection.cursor()
+    
+    # Check if the user is an admin
+    cur.execute(
+        "SELECT role FROM users WHERE id = %s",
+        (request.cookies.get('session_id'),)
+    )
+    user = cur.fetchone()
+
+    if not user or user[0] != 'admin':
+        cur.close()
+        return jsonify({'error': 'Permission denied'}), 403
+
+    # Get all users
+    users_dict = {}
+    cur.execute("SELECT id, username FROM users")
+    users = cur.fetchall()
+    for user in users:
+        users_dict[user[0]] = user[1]
+
+    # Fetch all borrowed books
+    borrowed_books = {}
+    cur.execute("""
+        SELECT bb.book_id, b.title, b.author, bb.user_id
+        FROM borrowed_book bb
+        JOIN books b ON bb.book_id = b.book_id
+    """)
+    borrowed_books_data = cur.fetchall()
+
+    for book in borrowed_books_data:
+        user_id = book[3]
+        if user_id not in borrowed_books:
+            borrowed_books[user_id] = []
+        borrowed_books[user_id].append({
+            'book_id': book[0],
+            'title': book[1],
+            'author': book[2]
+        })
+
+    # Prepare the response
+    response = []
+    for user_id, books in borrowed_books.items():
+        response.append({
+            'user_id': user_id,
+            'username': users_dict.get(user_id, 'Unknown'),
+            'borrowed_books': books
+        })
+
+    cur.close()
+    return jsonify(response), 200
+ 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True) 
