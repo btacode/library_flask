@@ -1,0 +1,23 @@
+.form-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+.card {
+  width: 400px;
+  padding: 20px;
+  background-color: #777879;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(97, 96, 96, 0.1);
+}
+.form-group {
+  margin-bottom: 15px;
+}
+input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+}
