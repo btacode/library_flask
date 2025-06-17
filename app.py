@@ -1,7 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_mysqldb import MySQL
+from flask_cors import CORS
 
 app = Flask(__name__)
+
+CORS(app, supports_credentials=True)
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
@@ -150,7 +153,7 @@ def borrow_book(book_id):
     if not request.cookies.get('session_id'):
         return jsonify({'error': 'User not logged in'}), 401
 
-     cur = mysql.connection.cursor()
+    cur = mysql.connection.cursor()
     cur.execute("SELECT id FROM users WHERE id = %s", (request.cookies.get('session_id'),))
     user = cur.fetchone()
     
