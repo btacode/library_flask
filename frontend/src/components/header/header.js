@@ -1,13 +1,21 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/APIs";
+import { useSelector, useDispatch } from 'react-redux';
+import authActions from '../../redux/Actions/authActions';
 
 const Header = () => {
+  const { userData } = useSelector((state) => state.auth);
+  console.log("🚀 ~ Header ~ userData:", userData)
+  
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const handleLogout = async () => {
     try {
       await api.logout();
       localStorage.removeItem("user");
+      dispatch(authActions.setClearData());
       navigate("/login");
     } catch (error) {
       console.error("Logout failed:", error);
