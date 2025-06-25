@@ -2,6 +2,7 @@ import authActions from '../Actions/authActions'; // Import as default
 
 const initialState = {
   userData: {},
+  booksList:[]
 };
 
 export default function authReducer(state = initialState, action) {
@@ -17,13 +18,13 @@ export default function authReducer(state = initialState, action) {
         ...state,
         userData: {},
       };
-
+    
     case authActions.SET_BOOKS_LIST:
       return {
-        ...state,
+        ...state, 
         booksList: action.booksList,
       };
-      
+
     default:
       return state;
   }

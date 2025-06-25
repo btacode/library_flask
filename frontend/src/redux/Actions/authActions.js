@@ -18,7 +18,7 @@ const authActions = {
         type: authActions.SET_BOOKS_LIST,
         booksList: data,
       });
-  },
+  }, 
   setClearData: () => {
     return (dispatch) =>
       dispatch({
@@ -27,5 +27,5 @@ const authActions = {
   },
 };
 
-// Export as default (not named export)
+  
 export default authActions;

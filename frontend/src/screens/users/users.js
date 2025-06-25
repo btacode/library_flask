@@ -16,9 +16,9 @@ function Users() {
 
  const closeModal = () => {
    setModalIsOpen(false);
-  //  setNewUsername("");
-  //  setNewPassword("");
-  //  setNewRole("User");
+   setNewUsername("");
+   setNewPassword("");
+   setNewRole("User");
  };
 
  return (

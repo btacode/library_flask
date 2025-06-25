@@ -6,7 +6,6 @@ import authActions from '../../redux/Actions/authActions';
 
 const Header = () => {
   const { userData } = useSelector((state) => state.auth);
-  console.log("🚀 ~ Header ~ userData:", userData)
   
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -14,7 +13,6 @@ const Header = () => {
   const handleLogout = async () => {
     try {
       await api.logout();
-      localStorage.removeItem("user");
       dispatch(authActions.setClearData());
       navigate("/login");
     } catch (error) {

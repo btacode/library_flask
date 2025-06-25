@@ -15,7 +15,6 @@ function Login() {
     event.preventDefault();
     try {
       const data = await api.login(username, password);
-      localStorage.setItem("user", JSON.stringify(data));
       dispatch(authActions.setUserData(data));
       navigate("/");
     } catch (error) {
