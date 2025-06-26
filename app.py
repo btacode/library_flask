@@ -4,7 +4,7 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-CORS(app, supports_credentials=True)
+CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
@@ -37,7 +37,7 @@ def get_users():
     users = cur.fetchall()
     cur.close()
  
-    return jsonify([{'id': user[0], 'username': user[1], 'role': user[2]} for user in users]), 20
+    return jsonify([{'id': user[0], 'username': user[1], 'role': user[2]} for user in users]), 200
 
 
 @app.route('/login', methods=['POST'])
@@ -53,10 +53,24 @@ def login_user():
     cur = mysql.connection.cursor()
     cur.execute("SELECT id, role FROM users WHERE username = %s AND password = %s", (username, password))
     user = cur.fetchone()
-    cur.close() 
+    cur.close()
+
     if user:
-        response = jsonify({'message': 'Login successful', 'user_id': user[0], 'role': user[1]})
-        response.set_cookie('session_id', str(user[0]), httponly=True)
+        response = jsonify({
+            'message': 'Login successful',
+            'user_id': user[0],
+            'role': user[1],
+            'username': username
+        })
+
+        response.set_cookie(
+            'session_id',
+            str(user[0]),
+            httponly=True,
+            samesite='Lax',
+            secure=False      # Change to True when you deploy with HTTPS
+        )
+
         return response, 200
     else:
         return jsonify({'error': 'Invalid username or password'}), 401
@@ -66,6 +80,23 @@ def logout_user():
     response = jsonify({'message': 'Logged out successfully'})
     response.delete_cookie('session_id')
     return response, 200
+
+@app.route('/check_auth', methods=['GET'])
+def check_auth():
+    session_id = request.cookies.get('session_id')
+    if not session_id:
+        return jsonify({'authenticated': False}), 401
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT username, role FROM users WHERE id = %s", (session_id,))
+    user = cur.fetchone()
+    cur.close()
+
+    if user:
+        return jsonify({'authenticated': True, 'username': user[0], 'role': user[1]}), 200
+    else:
+        return jsonify({'authenticated': False}), 401
+
 
 @app.route('/books', methods=['POST'])
 def add_book():
@@ -101,13 +132,26 @@ def add_book():
     return jsonify({'message': 'Book added successfully'}), 201
 
 @app.route('/books', methods=['GET'])
-def get_books():    
+def get_books():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT book_id, title, author, publishing_year FROM books")
+
+    cur.execute("""
+        SELECT b.book_id, b.title, b.author, b.publishing_year, bb.user_id
+        FROM books b
+        LEFT JOIN borrowed_books bb ON b.book_id = bb.book_id
+    """)
     books = cur.fetchall()
     cur.close()
 
-    return jsonify([{'book_id': book[0], 'title': book[1], 'author': book[2], 'publishing_year': book[3]} for book in books]), 200   
+    return jsonify([
+        {
+            'book_id': book[0],
+            'title': book[1],
+            'author': book[2],
+            'publishing_year': book[3],
+            'borrowed_by': book[4]
+        } for book in books
+    ]), 200
 
 @app.route('/delete_book/<int:book_id>', methods=['DELETE'])
 def delete_book(book_id):   
@@ -160,13 +204,13 @@ def borrow_book(book_id):
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    cur.execute("SELECT * FROM borrowed_book WHERE book_id = %s AND user_id = %s", (book_id, user[0]))
+    cur.execute("SELECT * FROM borrowed_books WHERE book_id = %s AND user_id = %s", (book_id, user[0]))
     borrow_book = cur.fetchone()
 
     if borrow_book:
         return jsonify({'error': 'Book already borrowed by this user'}), 400
 
-    cur.execute("INSERT INTO borrowed_book (book_id, user_id) VALUES (%s, %s)", (book_id, user[0]))
+    cur.execute("INSERT INTO borrowed_books (book_id, user_id) VALUES (%s, %s)", (book_id, user[0]))
     
     mysql.connection.commit()
     cur.close()
@@ -190,7 +234,7 @@ def return_book(book_id):
         return jsonify({'error': 'Invalid session'}), 401
 
     cur.execute(
-        "DELETE FROM borrowed_book WHERE book_id = %s AND user_id = %s",
+        "DELETE FROM borrowed_books WHERE book_id = %s AND user_id = %s",
         (book_id, user[0])
     )
 
@@ -229,7 +273,7 @@ def get_all_borrowed_books():
     borrowed_books = {}
     cur.execute("""
         SELECT bb.book_id, b.title, b.author, bb.user_id
-        FROM borrowed_book bb
+        FROM borrowed_books bb
         JOIN books b ON bb.book_id = b.book_id
     """)
     borrowed_books_data = cur.fetchall()

@@ -5,17 +5,17 @@ import { useDispatch, useSelector } from "react-redux";
 import authActions from "../../redux/Actions/authActions";
 
 export default function Books() {
-  const { booksList } = useSelector((state) => state.auth);
+  const { booksList, userData } = useSelector((state) => state.auth);
 
   const dispatch = useDispatch();
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [year, setYear] = useState("");
-  const user = JSON.parse(localStorage.getItem("user"));
-  const openModal = () => setModalIsOpen(true);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedBookId, setSelectedBookId] = useState(null);
+ 
+  const openModal = () => setModalIsOpen(true);
   const closeModal = () => {
     setModalIsOpen(false);
     setTitle("");
@@ -89,12 +89,36 @@ export default function Books() {
     }
   };
 
+  const borrowBook = async (bookId) => {
+    try {
+      const response = await api.borrowBook(bookId);
+      if (response?.message) {
+        alert(response?.message);
+      }
+      listBooks();
+    } catch (error) {
+      console.error("There was an error borrowing the book!", error);
+    }
+  };
+
+  const returnBook = async (bookId) => {
+    try {
+      const response = await api.returnBook(bookId);
+      if (response?.message) {
+        alert(response?.message);
+      }
+      listBooks();
+    } catch (error) {
+      console.error("There was an error returning the book!", error);
+    }
+  }
+
   return (
     <>
       <div className="container">
         <div className="header">
           <p className="lead">Books</p>
-          {user?.role === "admin" && (
+          {userData?.role === "admin" && (
             <button className="add-button" onClick={openModal}>
               Add Book
             </button>
@@ -136,10 +160,36 @@ export default function Books() {
                         deleteBook(book.book_id);
                       }
                     }}
+                    disabled={book.borrowed_by !== null}
+                    title={
+                      book.borrowed_by !== null
+                        ? "Cannot delete a borrowed book"
+                        : ""
+                    }
                   >
                     Delete
                   </button>
-                  <button className="btn btn-sm btn-info">Borrow</button>
+
+                  {book.borrowed_by === userData?.user_id ? (
+                    <button
+                      className="btn btn-sm btn-success"
+                      onClick={() => returnBook(book.book_id)}
+                    >
+                      Return
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-sm btn-info"
+                      onClick={() => borrowBook(book.book_id)}
+                      title={
+                        book.borrowed_by !== null
+                          ? "Book is already borrowed"
+                          : ""
+                      }
+                    >
+                      Borrow
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
