@@ -14,7 +14,7 @@ export default function Books() {
   const [year, setYear] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [selectedBookId, setSelectedBookId] = useState(null);
- 
+
   const openModal = () => setModalIsOpen(true);
   const closeModal = () => {
     setModalIsOpen(false);
@@ -111,7 +111,7 @@ export default function Books() {
     } catch (error) {
       console.error("There was an error returning the book!", error);
     }
-  }
+  };
 
   return (
     <>
@@ -132,6 +132,7 @@ export default function Books() {
               <th>Title</th>
               <th>Author</th>
               <th>Publishing year</th>
+              {userData?.role === "admin" && <th>Borrowed by</th>}
               <th>Actions</th>
             </tr>
           </thead>
@@ -142,35 +143,47 @@ export default function Books() {
                 <td>{book.title}</td>
                 <td>{book.author}</td>
                 <td>{book.publishing_year}</td>
+                {userData?.role === "admin" && <td>{book.borrowed_user}</td>}
                 <td>
-                  <button
-                    className="btn btn-sm btn-warning"
-                    onClick={() => updateBookFunc(book)}
-                  >
-                    Update
-                  </button>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "Are you sure you want to delete this book?"
-                        )
-                      ) {
-                        deleteBook(book.book_id);
+                  {userData?.role === "admin" && (
+                    <button
+                      className="btn btn-sm btn-warning"
+                      onClick={() => {
+                        console.log(
+                          "book.borrowed_id",
+                          book.borrowed_id,
+                          userData
+                        );
+                        updateBookFunc(book);
+                      }}
+                    >
+                      Update
+                    </button>
+                  )}
+                  {userData?.role === "admin" && (
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Are you sure you want to delete this book?"
+                          )
+                        ) {
+                          deleteBook(book.book_id);
+                        }
+                      }}
+                      disabled={book.borrowed_id !== null}
+                      title={
+                        book.borrowed_id !== null
+                          ? "Cannot delete a borrowed book"
+                          : ""
                       }
-                    }}
-                    disabled={book.borrowed_by !== null}
-                    title={
-                      book.borrowed_by !== null
-                        ? "Cannot delete a borrowed book"
-                        : ""
-                    }
-                  >
-                    Delete
-                  </button>
+                    >
+                      Delete
+                    </button>
+                  )}
 
-                  {book.borrowed_by === userData?.user_id ? (
+                  {book.borrowed_id === userData?.user_id ? (
                     <button
                       className="btn btn-sm btn-success"
                       onClick={() => returnBook(book.book_id)}
@@ -182,7 +195,7 @@ export default function Books() {
                       className="btn btn-sm btn-info"
                       onClick={() => borrowBook(book.book_id)}
                       title={
-                        book.borrowed_by !== null
+                        book.borrowed_id !== null
                           ? "Book is already borrowed"
                           : ""
                       }

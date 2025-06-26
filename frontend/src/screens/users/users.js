@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./users.css";
+import { useSelector } from "react-redux";
+import api from "../../config/APIs";
 
 function Users() {
- const users = [
-   { id: 1, username: "john_doe", role: "Admin" },
-   { id: 2, username: "jane_smith", role: "User" },
- ];
+
+ const [usersList, setUsersList] = useState([]);
+ const {userData} = useSelector((state) => state.auth);
  const [modalIsOpen, setModalIsOpen] = useState(false);
 
  const [newUsername, setNewUsername] = useState("");
@@ -21,14 +22,37 @@ function Users() {
    setNewRole("User");
  };
 
+ const listUsersAPI = async () => {
+    try {
+      const response = await api.users();
+      setUsersList(response);
+    } catch (error) {
+      console.log("🚀 ~ listUsersAPI ~ error:", error);
+    }};
+
+
+useEffect(()=>{listUsersAPI()},[])
+
+ const addUser = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.addUser(newUsername, newPassword, newRole);
+      if (response) {
+        listUsersAPI();
+        closeModal();
+      }
+    } catch (error) {
+      console.error("There was an error adding the user!", error);
+    }
+  }
  return (
    <>
      <div className="container">
        <div className="header">
-         <p className="lead">User Management</p>
-         <button className="add-button" onClick={openModal}>
+         <p className="lead">Users</p>
+         {userData?.role === 'admin' && <button className="add-button" onClick={openModal}>
            Add User
-         </button>
+         </button>}
        </div>
 
        <table className="user-table">
@@ -40,7 +64,7 @@ function Users() {
            </tr>
          </thead>
          <tbody>
-           {users.map((user) => (
+           {usersList.map((user) => (
              <tr key={user.id}>
                <td>{user.id}</td>
                <td>{user.username}</td>
@@ -124,7 +148,7 @@ function Users() {
                </div>
 
                <div className="modal-actions">
-                 <button className="btn btn-primary" type="submit">
+                 <button className="btn btn-primary" type="submit" onClick={addUser}>
                    Add
                  </button>
                  <button

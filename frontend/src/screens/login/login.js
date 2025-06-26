@@ -14,15 +14,19 @@ function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const data = await api.login(username, password);
-      dispatch(authActions.setUserData(data));
-      navigate("/");
+      const response = await api.login(username, password);
+  
+      if (response.status === 200) {
+        dispatch(authActions.setUserData(response.data));
+        navigate("/");
+      }
     } catch (error) {
       console.log("🚀 ~ handleSubmit ~ error:", error);
       const errorMessage = error?.response?.data?.error || "Login failed. Please try again.";
       alert(errorMessage);
     }
   };
+  
 
   return (
     <div>

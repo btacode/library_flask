@@ -22,7 +22,7 @@ async function login(username, password) {
     const response = await axios.post(`${API_BASE_URL}/login`, payload, {
       withCredentials: true,
     });
-    return response?.data;
+    return response;
   } catch (error) {
     console.error("Login failed:", error);
     throw error;
@@ -166,6 +166,18 @@ async function returnBook(bookId) {
   }
 }
 
+async function getBorrowedBooks() {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/borrowed_books`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("There was an error fetching borrowed books!", error);
+    throw error;
+  }
+}
+
 export default {
   login,
   logout,
@@ -177,5 +189,5 @@ export default {
   deleteBook,
   borrowBook,
   checkAuth,
-  returnBook,
+  returnBook,getBorrowedBooks
 };
